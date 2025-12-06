@@ -1,48 +1,46 @@
 #Demi-angle de l'entonnoir
-a=c(1e-2,2e-2,3e-2) #en m
-inca=1e-2 #en m
-h=c(sqrt(5)*1e-2,sqrt(13)*1e-2,sqrt(153)*1e-2) #en m
-inch=1e-2 #en m
-o=c(2e-2,3e-2,12e-2) #en m
-inco=1e-2 #en m
-alpha=NULL
-for (i in 1:length(a)){alpha[i]=mean(c(acos(a[i]/h[i]),asin(o[i]/h[i])))}
-r=c(1e-2,2e-2,3e-2) #en m
-incr=1e-2 #en m
-L=c(10e-2,20e-2,30e-2) #en m
-incL=1e-2 #en m
-incalpha=alpha*sqrt((inca/a)^2+(inch/h)^2+(inco/o)^2)
+alpha=c(40,30,20,5)*(pi/180)
+incalpha=pi/360
+r=c(6,8,10,12)*((1e-3)/2) #en m
+incr=2e-3 #en m
+L=c(21,50,10.8,30)*1e-2 #en m
+incL=incr #en m
 
 #Mesures du temps
-Z01=c(0,1,2) #en m
-Z02=c(0,1,2) #en m
-Z03=c(0,1,2) #en m
+r=sort(r) #Variation de r
+Z01=c(95-8,95-6,95-9,105-6)*1e-3 #en m
+L=sort(L) #Variation de L
+Z02=c(95-12,95-6,95-6,95-7)*1e-3 #en m
+alpha=sort(alpha) #Variation de alpha
+Z03=c(95-5,95-6,75-7,87-16)*1e-3 #en m
 incZ0=1e-2 #en m
-tf1=c(0,1,2)
-inctf1=0.01 #en s
-tf2=c(3,4,5)
+tf1=c(43.49,27.5,11.42,11.29)
+inctf1=250e-3 #en s
+tf2=c(29.77,38.56,40.07,46.53)
 inctf2=inctf1
-tf3=c(6,7,8)
+tf3=c(16.62,15.51,10.77,35.57)
 inctf3=inctf1
-data1=data.frame(tf1,r)
 data2=data.frame(tf2,L)
-data3=data.frame(tf3,alpha)
 
 par(mfrow=c(2,2))
 #Ajustements linéaires
-lmtf1=lm(tf1~r,data=data1)
+r2=1/(r^4)
+data1=data.frame(tf1,r2)
+lmtf1=lm(tf1~r2,data=data1)
 summary(lmtf1)
-a1=lmtf1[["coefficients"]][["r"]]
+a1=lmtf1[["coefficients"]][["r2"]]
 b1=lmtf1[["coefficients"]][["(Intercept)"]]
-plot(r,tf1,type="p",
+plot(1/(r^4),tf1,type="p",
      xlab="r",ylab="tf",main="tf en fonction de r",
      col="red",
      fg="darkgreen",
      col.axis="blue",
      col.lab="blue",
-     sub=paste("Ajustement linéaire: tf=",sprintf("%.3f",a1),"r+",sprintf("%.3f",b1),"s"))
+     xlim=c(0,max(1/(r^4))),
+     ylim=c(0,max(tf1)),
+     sub=paste("Ajustement linéaire: tf=",sprintf("%.3f",a1),"r+-",sprintf("%.3f",b1),"s"))
 abline(lmtf1)
-arrows(r, tf1-inctf1, r, tf1+inctf1,
+arrows(r2, tf1-inctf1, r2, tf1+inctf1,
        angle=90, code=3, length=0.05)
 
 lmtf2=lm(tf2~L,data=data2)
@@ -55,33 +53,42 @@ plot(L,tf2,type="p",
      fg="darkgreen",
      col.axis="blue",
      col.lab="blue",
+     xlim=c(0,max(L)),
+     ylim=c(0,max(tf2)),
      sub=paste("Ajustement linéaire: tf=",sprintf("%.3f",a2),"L+-",sprintf("%.3f",b2),"s"))
 abline(lmtf2)
 arrows(L, tf2-inctf2, L, tf2+inctf2,
        angle=90, code=3, length=0.05)
 
-lmtf3=lm(tf3~alpha,data=data3)
+tf32=tf3/(Z03^4)
+inctf32=tf32*sqrt((inctf3/tf3)^2+16*(incZ0/Z03)^2)
+alpha2=1-cos(alpha)
+data3=data.frame(tf32,alpha2)
+
+lmtf3=lm(tf32~alpha2,data=data3)
 summary(lmtf3)
-a3=lmtf3[["coefficients"]][["alpha"]]
+a3=lmtf3[["coefficients"]][["alpha2"]]
 b3=lmtf3[["coefficients"]][["(Intercept)"]]
-plot(alpha,tf3,type="p",
+plot(alpha2,tf32,type="p",
      xlab="alpha",ylab="tf",main="tf en fonction de alpha",
      col="red",
      fg="darkgreen",
      col.axis="blue",
      col.lab="blue",
+     xlim=c(0,max(1-cos(alpha))),
+     ylim=c(0,max(tf3/(Z03^4))),
      sub=paste("Ajustement linéaire: tf=",sprintf("%.3f",a3),"alpha+-",sprintf("%.3f",b3),"s"))
 abline(lmtf3)
-arrows(alpha, tf3-inctf3, alpha, tf3+inctf3,
+arrows(alpha2, tf32-inctf32, alpha2, tf32+inctf32,
        angle=90, code=3, length=0.05)
 
 #Viscosité
-gamma=1e-3 #en N.m^-1
-mu1=(tf1*gamma*r^4)/(L[1]*Z01^4*(1-cos(alpha[1])))
+gamma=25e-3 #en N.m^-1
+mu1=(tf1*gamma*r^4)/(L[4]*Z01^4*(1-cos(alpha[2])))
 incmu1=mu1*sqrt((incr/r)^2+(incL/L[1])^2+(incalpha/alpha[1]))
-mu2=(tf2*gamma*r[1]^4)/(L*Z01^4*(1-cos(alpha[1])))
+mu2=(tf2*gamma*r[1]^4)/(L*Z01^4*(1-cos(alpha[2])))
 incmu2=mu2*sqrt((incr/r[1])^2+(incL/L)^2+(incalpha/alpha[1]))
-mu3=(tf3*gamma*r[1]^4)/(L[1]*Z01^4*(1-cos(alpha)))
+mu3=(tf3*gamma*r[2]^4)/(L[4]*Z01^4*(1-cos(alpha)))
 incmu3=mu3*sqrt((incr/r[1])^2+(incL/L[1])^2+(incalpha/alpha))
 
 par(mfrow=c(2,2))
