@@ -18,8 +18,9 @@ data1=data.frame(Q,tq)
 incm=2.5e-3 #en kg
 inctq=250e-3 #en s (incertitude du lecteur vidéo)
 incQ=Q*sqrt((incm/m)^2+(inctq/tq)^2)
+incQ=incQ[1:length(Q)]
 
-par(mfrow=c(2,2))
+par(mfrow=c(1,3))
 #Ajustement linéaire
 lmQ=lm(Q~tq,data=data1)
 summary(lmQ)
@@ -31,7 +32,9 @@ plot(tq,Q,,type="p",
      fg="darkgreen",
      col.axis="blue",
      col.lab="blue",
-     sub=paste("Ajustement: Q(t)=",a1,"t+",b1))
+     xlim=c(0,max(tq)),
+     ylim=c(0,max(Q)),
+     sub=paste("Ajustement: Q(t)=",formatC(a1,format="e",digits=2),"t+",formatC(b1,format="e",digits=2)))
 abline(lmQ)
 arrows(tq, Q-incQ, tq, Q+incQ,
        angle=90, code=3, length=0.05)
@@ -40,7 +43,7 @@ incQadj=mean(incQ)
 
 #Saisir les hauteurs mesurées
 th=tq #en s
-h=rev(seq(0,27,1))*1e-3 #en m
+h=rev(seq(0,27,1))*1e-2 #en m
 h=h[1:length(th)]
 g=9.81 #en m.s^-2
 dP=rho*g*h
@@ -63,7 +66,9 @@ plot(th,dP,,type="p",
      fg="darkgreen",
      col.axis="blue",
      col.lab="blue",
-     sub=paste("Ajustement: dP(t)=",a2,"t+",b2))
+     xlim=c(0,max(th)),
+     ylim=c(0,max(dP)),
+     sub=paste("Ajustement: dP(t)=",formatC(a2,format="e",digits=2),"t+",formatC(b2,format="e",digits=2)))
 abline(lmdP)
 arrows(th, dP-incdP, th, dP+incdP,
        angle=90, code=3, length=0.05)
@@ -74,7 +79,6 @@ data3=data.frame(Q,dP)
 lmx=lm(Q~0+dP,data=data3)
 summary(lmx)
 a3=lmx[["coefficients"]][["dP"]]
-abline(lmx)
 
 plot(dP,Q,type="p",
      xlab="dP",ylab="Q(dP)",main="Rapport entre débit volumique et différence de pression",
@@ -84,8 +88,8 @@ plot(dP,Q,type="p",
      col.lab="blue",
      xlim=c(0,max(dP)),
      ylim=c(0,max(Q)),
-     sub=paste("Ajustement: Q(dP)=",a3,"dP"))
-
+     sub=paste("Ajustement: Q(dP)=",formatC(a3,format="e",digits=2),"dP"))
+abline(lmx)
 arrows(dP, Q-incQ, dP, Q+incQ,
        angle=90, code=3, length=0.05)
 
@@ -97,14 +101,14 @@ print(paste("Rh=",Rh,"+-",incRh,"m.s"))
 #Reynolds
 D=1e-3 #en m
 incD=0.1e-3 #en m
-d=2.7e-2 #en m
-incd=0.5e-3 #en m
+dp=2.7e-2 #en m
+incdp=0.5e-3 #en m
 mu=1e-3 #en Pa.s
-Re=(4*rho*D*max(Q))/(pi*mu*(d^2))
-incRe=Re*sqrt((incD/D)^2+4*(incd/d)^2+(incQ/max(Q))^2)
+Re=(4*rho*D*max(Q))/(pi*mu*(dp^2))
+incRe=Re*sqrt((incD/D)^2+4*(incdp/dp)^2+(incQ/max(Q))^2)
 Re=mean(Re)
 incRe=mean(incRe)
-print(paste("Re=",Re,"+-",incRe))
+print(paste("Re=",formatC(Re,format="e",digits=2),"+-",formatC(incRe,format="e",digits=2)))
 
 
 #Perméabilité k
@@ -114,17 +118,27 @@ print(paste("k=",k,"+-",inck,"m^2"))
 
 #Taille des grains
 phi=c(0.65,0.74)
-k=(1-phi)^3*d^2/(180*phi^2)
-print(paste("k=",k,"+-",2*incd,"m^2"))
+k=(1-phi)^3*D^2/(180*phi^2)
+print(paste("k=",k,"+-",2*incD,"m^2"))
 
 d=(phi/(dp*(1-phi)))*sqrt(720*mu/(pi*Rh*(1-phi)))
 incd=d*sqrt((incdp/dp)^2+(incRh/Rh)^2)
 print(paste("d=",d,"+-",incd,"m"))
+
 ht0=(1-exp(-1))*h[1] #On détermine tau expérimentalement
 print(ht0)
 tau=106.57 #en s
-inctau=0.01 #en s
+inctau=250e-3 #en s
 print(paste("tau=",tau,"+-",inctau,"s"))
 d=(phi*D/(dp*(1-phi)))*sqrt(180*mu/(rho*g*tau*(1-phi)))
 incd=d*sqrt((incD/d)^2+(incdp/dp)^2)
 print(paste("d=",d,"+-",incd,"m"))
+
+install.packages("gridExtra")
+library(gridExtra)
+table1=data.frame(tq,Q,dP)
+library(greekLetters)
+colnames(table1)=c("t (s)","Q (m^3.s-1)","Delta P (Pa)")
+pdf("table1.pdf", height=11, width=8.5)
+grid.table(table1)
+dev.off()
